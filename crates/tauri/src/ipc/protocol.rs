@@ -29,7 +29,23 @@ const TAURI_RESPONSE_HEADER_NAME: &str = "Tauri-Response";
 const TAURI_RESPONSE_HEADER_ERROR: &str = "error";
 const TAURI_RESPONSE_HEADER_OK: &str = "ok";
 
-// Security constants for payload validation
+/// Security constants for IPC request validation.
+///
+/// These constants define the maximum allowed sizes for various IPC components
+/// to prevent denial-of-service attacks and ensure resource constraints.
+///
+/// # Security Rationale
+///
+/// - `MAX_PAYLOAD_SIZE`: Prevents memory exhaustion through oversized payloads.
+///   Most legitimate IPC payloads are much smaller. For large data transfers,
+///   use dedicated file APIs instead of IPC.
+///
+/// - `MAX_COMMAND_LENGTH`: Prevents resource exhaustion and ensures command names
+///   remain manageable. Commands longer than this are likely malformed or malicious.
+///
+/// - `MAX_INVOKE_KEY_LENGTH`: The invoke key is a Z85-encoded 128-bit value,
+///   which results in 20 characters. This generous limit allows for future formats
+///   while preventing abuse.
 const MAX_PAYLOAD_SIZE: usize = 10 * 1024 * 1024; // 10MB
 const MAX_COMMAND_LENGTH: usize = 512;
 const MAX_INVOKE_KEY_LENGTH: usize = 256;
