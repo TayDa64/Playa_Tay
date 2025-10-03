@@ -1,0 +1,11 @@
+{
+  "name": "@playa/electron-drm-shell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Optional Electron module (Pattern B) for DRM/Widevine scenarios",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'Pattern B outline: add builder config'",
+    "dev": "echo 'Pattern B outline: implement later'"
+  }
+}

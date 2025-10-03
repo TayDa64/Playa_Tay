@@ -35,6 +35,7 @@ members = [
   "examples/api/src-tauri/tauri-plugin-sample",
 ]
 resolver = "2"
+exclude = ["examples/multiwindow"]
 
 [workspace.package]
 authors = ["Tauri Programme within The Commons Conservancy"]

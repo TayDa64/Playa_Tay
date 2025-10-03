@@ -174,6 +174,10 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::perform_request,
       cmd::echo,
       cmd::spam,
+      cmd::launch_electron,
+      cmd::open_electron_feature,
+      cmd::is_electron_available,
+      cmd::ensure_electron_sidecar,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");

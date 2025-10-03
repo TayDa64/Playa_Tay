@@ -6,8 +6,6 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "pnpm -w -F @playa/electron-shell build && mkdir -p resources/electron-shell && cp -f ../../packages/electron-shell/dist/main.js resources/electron-shell/main.js && pnpm dev",
-  "beforeBuildCommand": "pnpm -w -F @playa/electron-shell build && mkdir -p resources/electron-shell && cp -f ../../packages/electron-shell/dist/main.js resources/electron-shell/main.js && pnpm --filter api build",
     "removeUnusedCommands": true
   },
   "app": {
@@ -40,38 +38,7 @@
   "plugins": {
     "cli": {
       "description": "Tauri API example",
-      "args": [
-        {
-          "short": "c",
-          "name": "config",
-          "takesValue": true,
-          "description": "Config path"
-        },
-        {
-          "short": "t",
-          "name": "theme",
-          "takesValue": true,
-          "description": "App theme",
-          "possibleValues": ["light", "dark", "system"]
-        },
-        {
-          "short": "v",
-          "name": "verbose",
-          "description": "Verbosity level"
-        }
-      ],
-      "subcommands": {
-        "update": {
-          "description": "Updates the app",
-          "args": [
-            {
-              "short": "b",
-              "name": "background",
-              "description": "Update in background"
-            }
-          ]
-        }
-      }
+      "args": []
     }
   },
   "bundle": {
@@ -85,19 +52,6 @@
     ],
     "resources": [
       "resources/electron-shell/main.js"
-    ],
-    "windows": {
-      "wix": {
-        "language": {
-          "en-US": {},
-          "pt-BR": {
-            "localePath": "locales/pt-BR.wxl"
-          }
-        }
-      },
-      "nsis": {
-        "compression": "none"
-      }
-    }
+    ]
   }
 }

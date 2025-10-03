@@ -1,0 +1,9 @@
+[package]
+name = "multiwindow"
+version = "0.0.0"
+edition = "2021"
+
+# Minimal binary target so cargo metadata and watchers work during CLI builds.
+[[bin]]
+name = "multiwindow"
+path = "main.rs"
