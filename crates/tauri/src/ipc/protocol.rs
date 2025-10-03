@@ -29,6 +29,11 @@ const TAURI_RESPONSE_HEADER_NAME: &str = "Tauri-Response";
 const TAURI_RESPONSE_HEADER_ERROR: &str = "error";
 const TAURI_RESPONSE_HEADER_OK: &str = "ok";
 
+// Security constants for payload validation
+const MAX_PAYLOAD_SIZE: usize = 10 * 1024 * 1024; // 10MB
+const MAX_COMMAND_LENGTH: usize = 512;
+const MAX_INVOKE_KEY_LENGTH: usize = 256;
+
 pub fn message_handler<R: Runtime>(
   manager: Arc<AppManager<R>>,
 ) -> crate::runtime::webview::WebviewIpcHandler<crate::EventLoopMessage, R> {
@@ -432,6 +437,61 @@ fn handle_ipc_message<R: Runtime>(request: Request<String>, manager: &AppManager
   }
 }
 
+/// Validates that a command name is safe and doesn't contain malicious patterns.
+fn validate_command_name(cmd: &str) -> std::result::Result<(), String> {
+  if cmd.is_empty() {
+    return Err("command name cannot be empty".to_string());
+  }
+
+  if cmd.len() > MAX_COMMAND_LENGTH {
+    return Err(format!(
+      "command name exceeds maximum length of {} characters",
+      MAX_COMMAND_LENGTH
+    ));
+  }
+
+  // Check for null bytes that could be used for injection
+  if cmd.contains('\0') {
+    return Err("command name contains null bytes".to_string());
+  }
+
+  // Check for control characters that could be used for injection
+  if cmd.chars().any(|c| c.is_control() && c != '\t') {
+    return Err("command name contains invalid control characters".to_string());
+  }
+
+  Ok(())
+}
+
+/// Validates that the payload size is within acceptable limits.
+fn validate_payload_size(size: usize) -> std::result::Result<(), String> {
+  if size > MAX_PAYLOAD_SIZE {
+    return Err(format!(
+      "payload size {} exceeds maximum allowed size of {} bytes",
+      size, MAX_PAYLOAD_SIZE
+    ));
+  }
+  Ok(())
+}
+
+/// Validates that the invoke key format is correct.
+fn validate_invoke_key(key: &str) -> std::result::Result<(), String> {
+  if key.is_empty() {
+    return Err("invoke key cannot be empty".to_string());
+  }
+
+  if key.len() > MAX_INVOKE_KEY_LENGTH {
+    return Err("invoke key exceeds maximum length".to_string());
+  }
+
+  // Check for null bytes
+  if key.contains('\0') {
+    return Err("invoke key contains null bytes".to_string());
+  }
+
+  Ok(())
+}
+
 fn parse_invoke_request<R: Runtime>(
   #[allow(unused_variables)] manager: &AppManager<R>,
   request: http::Request<Vec<u8>>,
@@ -439,10 +499,16 @@ fn parse_invoke_request<R: Runtime>(
   #[allow(unused_mut)]
   let (parts, mut body) = request.into_parts();
 
+  // Validate payload size before processing
+  validate_payload_size(body.len())?;
+
   // skip leading `/`
   let cmd = percent_encoding::percent_decode(&parts.uri.path().as_bytes()[1..])
     .decode_utf8_lossy()
     .to_string();
+
+  // Validate command name to prevent injection attacks
+  validate_command_name(&cmd)?;
 
   // on Android we cannot read the request body
   // so we must ignore it because some commands use the IPC for faster response
@@ -487,6 +553,9 @@ fn parse_invoke_request<R: Runtime>(
     .to_str()
     .map_err(|_| "Tauri invoke key header value must be a string")?
     .to_owned();
+
+  // Validate invoke key format
+  validate_invoke_key(&invoke_key)?;
 
   let url = Url::parse(
     parts
@@ -748,5 +817,348 @@ mod tests {
 
     assert_eq!(invoke_request.headers, headers);
     assert_eq!(invoke_request.body, InvokeBody::Json(body_json));
+  }
+
+  #[test]
+  fn reject_command_with_null_bytes() {
+    let context = generate_context!("test/fixture/src-tauri/tauri.conf.json", crate, test = true);
+    let manager: AppManager<Wry> = AppManager::with_handlers(
+      context,
+      PluginStore::default(),
+      Box::new(|_| false),
+      None,
+      Default::default(),
+      StateManager::new(),
+      Default::default(),
+      #[cfg(all(desktop, feature = "tray-icon"))]
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      "".into(),
+      None,
+      crate::generate_invoke_key().unwrap(),
+    );
+
+    // URL encode a command with null byte (percent-encoded as %00)
+    let cmd_encoded = "write%00something";
+    let invoke_key = "1234ahdsjkl123";
+    let callback = 12378123;
+    let error = 6243;
+
+    let headers = HeaderMap::from_iter(vec![
+      (
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime::APPLICATION_JSON.as_ref()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_INVOKE_KEY_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(invoke_key).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_CALLBACK_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&callback.to_string()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_ERROR_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&error.to_string()).unwrap(),
+      ),
+      (ORIGIN, HeaderValue::from_str("tauri://localhost").unwrap()),
+    ]);
+
+    let mut request = Request::builder().uri(format!("ipc://localhost/{cmd_encoded}"));
+    *request.headers_mut().unwrap() = headers;
+
+    let request = request.body(vec![]).unwrap();
+    let result = super::parse_invoke_request(&manager, request);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("null bytes"));
+  }
+
+  #[test]
+  fn reject_command_with_control_characters() {
+    let context = generate_context!("test/fixture/src-tauri/tauri.conf.json", crate, test = true);
+    let manager: AppManager<Wry> = AppManager::with_handlers(
+      context,
+      PluginStore::default(),
+      Box::new(|_| false),
+      None,
+      Default::default(),
+      StateManager::new(),
+      Default::default(),
+      #[cfg(all(desktop, feature = "tray-icon"))]
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      "".into(),
+      None,
+      crate::generate_invoke_key().unwrap(),
+    );
+
+    // URL encode a command with control character (SOH, encoded as %01)
+    let cmd_encoded = "write%01something";
+    let invoke_key = "1234ahdsjkl123";
+    let callback = 12378123;
+    let error = 6243;
+
+    let headers = HeaderMap::from_iter(vec![
+      (
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime::APPLICATION_JSON.as_ref()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_INVOKE_KEY_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(invoke_key).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_CALLBACK_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&callback.to_string()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_ERROR_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&error.to_string()).unwrap(),
+      ),
+      (ORIGIN, HeaderValue::from_str("tauri://localhost").unwrap()),
+    ]);
+
+    let mut request = Request::builder().uri(format!("ipc://localhost/{cmd_encoded}"));
+    *request.headers_mut().unwrap() = headers;
+
+    let request = request.body(vec![]).unwrap();
+    let result = super::parse_invoke_request(&manager, request);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("control characters"));
+  }
+
+  #[test]
+  fn reject_empty_command() {
+    let context = generate_context!("test/fixture/src-tauri/tauri.conf.json", crate, test = true);
+    let manager: AppManager<Wry> = AppManager::with_handlers(
+      context,
+      PluginStore::default(),
+      Box::new(|_| false),
+      None,
+      Default::default(),
+      StateManager::new(),
+      Default::default(),
+      #[cfg(all(desktop, feature = "tray-icon"))]
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      "".into(),
+      None,
+      crate::generate_invoke_key().unwrap(),
+    );
+
+    let _cmd = "";
+    let invoke_key = "1234ahdsjkl123";
+    let callback = 12378123;
+    let error = 6243;
+
+    let headers = HeaderMap::from_iter(vec![
+      (
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime::APPLICATION_JSON.as_ref()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_INVOKE_KEY_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(invoke_key).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_CALLBACK_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&callback.to_string()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_ERROR_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&error.to_string()).unwrap(),
+      ),
+      (ORIGIN, HeaderValue::from_str("tauri://localhost").unwrap()),
+    ]);
+
+    let mut request = Request::builder().uri("ipc://localhost/");
+    *request.headers_mut().unwrap() = headers;
+
+    let request = request.body(vec![]).unwrap();
+    let result = super::parse_invoke_request(&manager, request);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("cannot be empty"));
+  }
+
+  #[test]
+  fn reject_oversized_command() {
+    let context = generate_context!("test/fixture/src-tauri/tauri.conf.json", crate, test = true);
+    let manager: AppManager<Wry> = AppManager::with_handlers(
+      context,
+      PluginStore::default(),
+      Box::new(|_| false),
+      None,
+      Default::default(),
+      StateManager::new(),
+      Default::default(),
+      #[cfg(all(desktop, feature = "tray-icon"))]
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      "".into(),
+      None,
+      crate::generate_invoke_key().unwrap(),
+    );
+
+    let cmd = "a".repeat(600); // Exceeds MAX_COMMAND_LENGTH
+    let invoke_key = "1234ahdsjkl123";
+    let callback = 12378123;
+    let error = 6243;
+
+    let headers = HeaderMap::from_iter(vec![
+      (
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime::APPLICATION_JSON.as_ref()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_INVOKE_KEY_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(invoke_key).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_CALLBACK_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&callback.to_string()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_ERROR_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&error.to_string()).unwrap(),
+      ),
+      (ORIGIN, HeaderValue::from_str("tauri://localhost").unwrap()),
+    ]);
+
+    let mut request = Request::builder().uri(format!("ipc://localhost/{cmd}"));
+    *request.headers_mut().unwrap() = headers;
+
+    let request = request.body(vec![]).unwrap();
+    let result = super::parse_invoke_request(&manager, request);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("maximum length"));
+  }
+
+  #[test]
+  fn reject_oversized_payload() {
+    let context = generate_context!("test/fixture/src-tauri/tauri.conf.json", crate, test = true);
+    let manager: AppManager<Wry> = AppManager::with_handlers(
+      context,
+      PluginStore::default(),
+      Box::new(|_| false),
+      None,
+      Default::default(),
+      StateManager::new(),
+      Default::default(),
+      #[cfg(all(desktop, feature = "tray-icon"))]
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      "".into(),
+      None,
+      crate::generate_invoke_key().unwrap(),
+    );
+
+    let cmd = "write_something";
+    let invoke_key = "1234ahdsjkl123";
+    let callback = 12378123;
+    let error = 6243;
+
+    let headers = HeaderMap::from_iter(vec![
+      (
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime::APPLICATION_OCTET_STREAM.as_ref()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_INVOKE_KEY_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(invoke_key).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_CALLBACK_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&callback.to_string()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_ERROR_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&error.to_string()).unwrap(),
+      ),
+      (ORIGIN, HeaderValue::from_str("tauri://localhost").unwrap()),
+    ]);
+
+    let mut request = Request::builder().uri(format!("ipc://localhost/{cmd}"));
+    *request.headers_mut().unwrap() = headers;
+
+    // Create a payload larger than MAX_PAYLOAD_SIZE
+    let oversized_body = vec![0u8; 11 * 1024 * 1024]; // 11MB
+    let request = request.body(oversized_body).unwrap();
+    let result = super::parse_invoke_request(&manager, request);
+
+    assert!(result.is_err());
+    let error_msg = result.unwrap_err();
+    assert!(error_msg.contains("payload size"));
+    assert!(error_msg.contains("exceeds maximum"));
+  }
+
+  #[test]
+  fn reject_invoke_key_with_null_bytes() {
+    let context = generate_context!("test/fixture/src-tauri/tauri.conf.json", crate, test = true);
+    let manager: AppManager<Wry> = AppManager::with_handlers(
+      context,
+      PluginStore::default(),
+      Box::new(|_| false),
+      None,
+      Default::default(),
+      StateManager::new(),
+      Default::default(),
+      #[cfg(all(desktop, feature = "tray-icon"))]
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      Default::default(),
+      "".into(),
+      None,
+      crate::generate_invoke_key().unwrap(),
+    );
+
+    let cmd = "write_something";
+    // Test with empty invoke key instead since null bytes can't be in HTTP headers
+    let invoke_key = "";
+    let callback = 12378123;
+    let error = 6243;
+
+    let headers = HeaderMap::from_iter(vec![
+      (
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime::APPLICATION_JSON.as_ref()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_INVOKE_KEY_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(invoke_key).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_CALLBACK_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&callback.to_string()).unwrap(),
+      ),
+      (
+        HeaderName::from_str(TAURI_ERROR_HEADER_NAME).unwrap(),
+        HeaderValue::from_str(&error.to_string()).unwrap(),
+      ),
+      (ORIGIN, HeaderValue::from_str("tauri://localhost").unwrap()),
+    ]);
+
+    let mut request = Request::builder().uri(format!("ipc://localhost/{cmd}"));
+    *request.headers_mut().unwrap() = headers;
+
+    let request = request.body(vec![]).unwrap();
+    let result = super::parse_invoke_request(&manager, request);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("invoke key"));
   }
 }
