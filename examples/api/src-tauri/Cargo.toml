@@ -23,6 +23,7 @@ tiny_http = "0.11"
 log = "0.4.21"
 tauri-plugin-sample = { path = "./tauri-plugin-sample/" }
 tauri-plugin-log = "2"
+rand = "0.8"
 
 [dependencies.tauri]
 path = "../../../crates/tauri"

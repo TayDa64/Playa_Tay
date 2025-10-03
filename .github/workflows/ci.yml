@@ -1,0 +1,78 @@
+name: CI (Selective Electron)
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  build-example-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable Corepack and set pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.16.0 --activate
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.77.2'
+
+      - name: Install Linux dependencies for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev || sudo apt-get install -y libwebkit2gtk-4.0-dev
+
+      - name: Install and build @tauri-apps/api (JS)
+        run: |
+          pnpm -F @tauri-apps/api install
+          pnpm -F @tauri-apps/api build
+
+      - name: Install and build Electron sidecar (Pattern A)
+        run: |
+          pnpm -F @playa/electron-shell install
+          pnpm -F @playa/electron-shell build
+
+      - name: Copy sidecar dist into app resources
+        run: |
+          mkdir -p examples/api/src-tauri/resources/electron-shell
+          cp -f packages/electron-shell/dist/main.js examples/api/src-tauri/resources/electron-shell/main.js
+
+      - name: Install and build example frontend (api)
+        run: |
+          pnpm --filter api install
+          pnpm --filter api build
+
+      - name: Cargo check example app
+        run: |
+          cargo check --manifest-path examples/api/src-tauri/Cargo.toml
+
+      - name: Build with Rust Tauri CLI (no bundle, CI config)
+        run: |
+          cargo run -p tauri-cli -- build --no-bundle --ci --config examples/api/src-tauri/tauri.ci.json
+
+      - name: Prepare zipped artifacts
+        if: always()
+        run: |
+          mkdir -p artifacts
+          zip -r artifacts/example-api-dist.zip examples/api/dist
+          # Include the entire target tree for debugging (no-bundle build)
+          zip -r artifacts/example-api-target.zip examples/api/src-tauri/target
+
+      - name: Upload build artifacts (zipped)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-api-build-zips
+          path: artifacts/*.zip

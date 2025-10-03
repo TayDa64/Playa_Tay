@@ -1,5 +1,6 @@
 <script>
   import { invoke } from '@tauri-apps/api/core'
+  import { openElectronFeature } from '../lib/electronFeature.js'
   import {
     getName,
     getVersion,
@@ -32,6 +33,18 @@
   function contextMenu() {
     invoke('plugin:app-menu|popup')
   }
+
+  async function openElectron() {
+    const url = 'https://example.com'
+    const res = await openElectronFeature(url)
+    if (res.ok) {
+      onMessage({ status: 'ok', action: 'openElectronFeature', url })
+    } else {
+      const code = 'code' in res ? res.code : undefined
+      const message = 'message' in res ? res.message : undefined
+      onMessage({ status: 'error', action: 'openElectronFeature', url, code, message })
+    }
+  }
 </script>
 
 <div class="grid gap-8 justify-items-start">
@@ -50,4 +63,5 @@
   </pre>
 
   <button class="btn" onclick={contextMenu}>Context menu</button>
+  <button class="btn" onclick={openElectron}>Open Electron Feature (Pattern A/B)</button>
 </div>
