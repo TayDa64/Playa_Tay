@@ -61,3 +61,152 @@ pub fn spam(channel: Channel<i32>) -> tauri::Result<()> {
   }
   Ok(())
 }
+
+/// Error codes for Electron feature operations.
+/// These codes form a stable contract with the frontend.
+#[derive(Debug, Serialize)]
+#[serde(tag = "code", content = "message")]
+pub enum ElectronError {
+  /// Electron runtime is not installed or not found in expected paths
+  #[serde(rename = "not_installed")]
+  NotInstalled(String),
+  /// Failed to spawn the Electron process
+  #[serde(rename = "spawn_error")]
+  SpawnError(String),
+}
+
+impl std::fmt::Display for ElectronError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ElectronError::NotInstalled(msg) => write!(f, "not_installed: {}", msg),
+      ElectronError::SpawnError(msg) => write!(f, "spawn_error: {}", msg),
+    }
+  }
+}
+
+impl From<ElectronError> for String {
+  fn from(err: ElectronError) -> String {
+    err.to_string()
+  }
+}
+
+/// Launch the minimal Electron sidecar (Pattern A) to load a given URL.
+///
+/// # Security notes
+/// - Uses a locally installed Electron binary under packages/electron-shell/node_modules/.bin
+/// - Passes a per-session auth token via environment variable for optional coordination
+/// - Renderer is sandboxed; no Node integration
+///
+/// # Error codes
+/// - `not_installed`: Electron binary not found
+/// - `spawn_error`: Failed to start Electron process
+#[command]
+#[allow(unused_variables)]
+pub async fn launch_electron(url: String) -> Result<(), String> {
+  use rand::{distributions::Alphanumeric, Rng};
+  use std::process::Command;
+
+  // Generate an ephemeral auth token (if the sidecar chooses to use it)
+  let auth_token: String = rand::thread_rng()
+    .sample_iter(&Alphanumeric)
+    .take(32)
+    .map(char::from)
+    .collect();
+
+  // In dev, the current dir is typically examples/api. The sidecar lives at ../../packages/electron-shell
+  let (electron_pkg_dir, electron_bin) = detect_electron_binary();
+  if electron_bin.is_none() {
+    return Err(ElectronError::NotInstalled(
+      "Electron binary not found. Run 'pnpm -F @playa/electron-shell install' in dev.".to_string()
+    ).into());
+  }
+  let electron_pkg_dir = electron_pkg_dir.expect("pkg dir");
+  let electron_bin = electron_bin.expect("bin path");
+
+  let mut cmd = Command::new(&electron_bin);
+  cmd.current_dir(&electron_pkg_dir)
+    .env("ELECTRON_TARGET_URL", &url)
+    .env("PLAYA_AUTH_TOKEN", &auth_token)
+    .env("ELECTRON_ENABLE_SECURITY_WARNINGS", "true")
+    .env("NODE_OPTIONS", "--no-experimental-fetch");
+
+  // Spawn without waiting; Electron will run until closed by the user
+  match cmd.spawn() {
+    Ok(_child) => Ok(()),
+    Err(e) => Err(ElectronError::SpawnError(format!("Failed to spawn electron: {e}")).into()),
+  }
+}
+
+/// Stable contract for the UI: open a feature that may require Electron.
+///
+/// # Error codes (returned as String for Tauri IPC compatibility)
+/// - `not_installed: <msg>`: Electron runtime not available
+/// - `spawn_error: <msg>`: Failed to launch Electron process
+///
+/// # Pattern A vs B
+/// - Pattern A (current): spawns sidecar from workspace package (dev) or bundled resource (prod)
+/// - Pattern B (future): detects/installs optional Electron module with signed updates
+
+#[command]
+pub async fn open_electron_feature(url: String) -> Result<(), String> {
+  // Pattern B detection: check if optional module is installed
+  // TODO: Implement detect_electron_module() for Pattern B
+  // See: packages/electron-drm-shell/README.md for implementation plan
+
+  // if let Some(module_path) = detect_electron_module() {
+  //   return launch_electron_module(url, module_path).await;
+  // }
+
+  // Fallback to Pattern A (bundled sidecar)
+  launch_electron(url).await
+}
+
+// TODO: Pattern B helpers (post-v1 implementation)
+// fn detect_electron_module() -> Option<PathBuf> {
+//   // 1. Read app config: ~/.playa/modules.json
+//   // 2. Check if "electron-drm-shell" entry exists
+//   // 3. Verify binary path exists and signature valid
+//   // 4. Check version compatibility
+//   // 5. Return Some(path) or None
+// }
+//
+// async fn launch_electron_module(url: String, module_path: PathBuf) -> Result<(), String> {
+//   // Similar to launch_electron but uses module_path
+//   // and validates signature before spawn
+// }
+
+fn detect_electron_binary() -> (Option<std::path::PathBuf>, Option<std::path::PathBuf>) {
+  use std::path::PathBuf;
+  // Dev path: workspace sidecar package
+  let dev_pkg = PathBuf::from("../../packages/electron-shell");
+  let dev_bin_rel = if cfg!(target_os = "windows") {
+    "node_modules/.bin/electron.cmd"
+  } else {
+    "node_modules/.bin/electron"
+  };
+  let dev_bin = dev_pkg.join(dev_bin_rel);
+  if dev_bin.exists() {
+    return (Some(dev_pkg), Some(dev_bin));
+  }
+
+  // Bundled path: resources directory (platform-specific at runtime). Example placeholder:
+  // Note: In a real app, you would use tauri APIs to read $RESOURCE paths or bundle a
+  // platform-specific electron binary. Here we fall back to None.
+  (None, None)
+}
+
+#[command]
+pub async fn is_electron_available() -> Result<bool, String> {
+  let (_pkg, bin) = detect_electron_binary();
+  Ok(bin.is_some())
+}
+
+#[command]
+pub async fn ensure_electron_sidecar() -> Result<(), String> {
+  // Dev-only helper: instructs user to install sidecar dependencies.
+  let (_pkg, bin) = detect_electron_binary();
+  if bin.is_some() {
+    return Ok(());
+  }
+  Err("not_installed".into())
+}

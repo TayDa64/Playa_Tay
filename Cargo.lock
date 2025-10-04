@@ -229,6 +229,7 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "log",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "tauri",
@@ -236,6 +237,7 @@ dependencies = [
  "tauri-plugin-log",
  "tauri-plugin-sample",
  "tiny_http",
+ "tokio",
 ]
 
 [[package]]

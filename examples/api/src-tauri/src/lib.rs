@@ -8,6 +8,9 @@ mod menu_plugin;
 #[cfg(desktop)]
 mod tray;
 
+// Re-export command functions for testing
+pub use cmd::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
+
 use serde::Serialize;
 use tauri::{
   ipc::Channel,
@@ -174,6 +177,10 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::perform_request,
       cmd::echo,
       cmd::spam,
+      cmd::launch_electron,
+      cmd::open_electron_feature,
+      cmd::is_electron_available,
+      cmd::ensure_electron_sidecar,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");

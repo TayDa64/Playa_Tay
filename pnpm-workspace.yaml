@@ -1,6 +1,8 @@
 packages:
   - packages/api
   - packages/cli
+  - packages/electron-shell
+  - packages/electron-drm-shell
   - crates/tauri-schema-worker
   - examples/api
   - examples/resources
