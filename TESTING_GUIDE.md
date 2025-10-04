@@ -131,7 +131,7 @@ pnpm run tauri dev
 
 **Modal Actions:**
 - **Close**: Dismisses modal, button remains in current state
-- **Retry**: 
+- **Retry**:
   1. Re-checks availability
   2. If available: attempts to launch
   3. If still unavailable: shows error again with updated message
