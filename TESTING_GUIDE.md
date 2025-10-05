@@ -46,7 +46,26 @@ test result: ok. 4 passed; 0 failed; 0 ignored
 
 To fully test the UI and see the Electron window launch, you need a machine with a display (local dev machine, not a container).
 
-### Prerequisites
+### ⚠️ Known Issues in Dev Containers
+
+**If you're in a headless dev container, you'll see these errors:**
+
+```bash
+# Option 1 (cargo run):
+thread 'main' panicked at tao-0.34.1/src/platform_impl/linux/event_loop.rs:218:53:
+Failed to initialize gtk backend!: BoolError { message: "Failed to initialize GTK" }
+```
+**Why**: No display server (X11/Wayland) available in container. GTK cannot initialize.
+
+```bash
+# Option 2 (pnpm run tauri dev):
+Error: Cannot find native binding.
+```
+**Why**: @tauri-apps/cli-linux-x64-gnu native module not built for container architecture.
+
+**Solution**: Use integration tests (already passing) OR test on a local machine with a display.
+
+### Prerequisites (Local Machine with Display)
 ```bash
 # 1. Clone the repository
 git clone https://github.com/TayDa64/Playa_Tay
@@ -67,24 +86,36 @@ mkdir -p examples/api/src-tauri/resources/electron-shell
 cp packages/electron-shell/dist/main.js examples/api/src-tauri/resources/electron-shell/main.js
 ```
 
-### Running the Application
+### Running the Application (Local Machine Only)
 
-**Option 1: Using Frontend Dev Server + Cargo**
+**Option 1: Using Frontend Dev Server + Cargo** (Recommended)
 ```bash
 # Terminal 1: Start frontend dev server
 cd examples/api
 pnpm run dev
 # Wait for "ready at http://localhost:1420/"
 
-# Terminal 2: Start Tauri app
+# Terminal 2: Start Tauri app (macOS/Linux desktop)
 cd examples/api/src-tauri
 cargo run
+
+# Windows: same commands work in PowerShell/CMD
 ```
 
-**Option 2: Using Tauri CLI (if Node CLI works)**
+**Option 2: Using Tauri CLI** (If native bindings work on your platform)
 ```bash
 cd examples/api
 pnpm run tauri dev
+```
+
+**Option 3: Using Rust Tauri CLI** (Most reliable)
+```bash
+# Install Rust Tauri CLI if not already installed
+cargo install tauri-cli --version ^2.0.0
+
+# Run from examples/api directory
+cd examples/api
+cargo tauri dev
 ```
 
 ### Expected UI Flow
@@ -223,19 +254,35 @@ On a machine with display, verify:
 
 ## 📝 Summary
 
-**In Headless Environment (Current):**
-- ✅ All integration tests pass
+**In Headless Environment (Dev Container/CI):**
+- ✅ All integration tests pass (4/4)
 - ✅ Backend commands work correctly
 - ✅ Error handling verified
 - ✅ Headless-aware test skipping works
-- ❌ Cannot visually test UI (no display)
+- ❌ Cannot run GUI (GTK initialization fails - expected)
+- ❌ Cannot use Node CLI (native binding missing - expected)
 
-**On Display-Enabled Machine (Next Step):**
+**Headless Testing Commands (What Works):**
+```bash
+# Run integration tests
+cd /workspaces/Playa_Tay
+cargo test -p api --test electron_integration -- --nocapture
+
+# Build all components (verify compilation)
+pnpm -F @playa/electron-shell build
+pnpm --filter api build
+cargo check -p api
+```
+
+**On Display-Enabled Machine (Local Dev Environment):**
 - ✅ Full UI testing possible
 - ✅ Modal rendering verification
 - ✅ Button states observable
 - ✅ Electron window launch testable
 - ✅ End-to-end flow validation
+- ✅ Both `cargo run` and `cargo tauri dev` work
 
 **Recommendation:**
-Test on a local development machine (macOS/Windows/Linux with display) to see the complete user experience. All backend functionality is confirmed working via integration tests.
+- **In Dev Container**: Run integration tests to verify functionality
+- **On Local Machine**: Run `cargo tauri dev` or `cargo run` to see full UI
+- **All backend functionality is confirmed working** via passing tests

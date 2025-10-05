@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 /**
  * Check if Electron runtime is available
  * @returns {Promise<boolean>}
+ * @export
  */
 export async function isElectronAvailable() {
   try {
