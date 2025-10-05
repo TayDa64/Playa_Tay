@@ -52,6 +52,9 @@ If any change risks these invariants, capture it in a dedicated spec with migrat
 - Selective Electron (Pattern A/B)
   - Spec: `specs/001-selective-electron/spec.md`
   - Plan: `specs/001-selective-electron/plan.md`
+- M1: Streaming Hub
+  - Spec: `specs/002-streaming-hub/spec.md`
+  - Plan: `specs/002-streaming-hub/plan.md`
 
 ## Open questions
 - DRM/Widevine distribution and licensing model for production.
