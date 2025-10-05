@@ -35,6 +35,7 @@ If any change risks these invariants, capture it in a dedicated spec with migrat
 - Deliver a minimal but polished host app proving selective Electron integration via one user-facing feature.
 - Preserve small installer footprint; keep Electron optional.
 - Establish clear contracts (invoke commands, IPC, resource packaging) and a CI pipeline producing artifacts.
+- **M1 (Streaming Hub)**: Modular video streaming with DRM support, following module isolation pattern.
 
 ## Out of scope (v1)
 - Full Pattern B (separately installed Electron module with signed updates) beyond scaffolding.

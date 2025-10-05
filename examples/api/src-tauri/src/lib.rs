@@ -49,6 +49,29 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
         .build(),
     )
     .plugin(tauri_plugin_sample::init())
+    // Register streaming protocol handler for video content
+    .register_asynchronous_uri_scheme_protocol("stream", |_ctx, request, responder| {
+      use http::{header::*, response::Builder as ResponseBuilder, status::StatusCode};
+      
+      // Simple implementation - just return OK for now
+      // In production, this would handle actual video streaming with range requests
+      let response = ResponseBuilder::new()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "video/mp4")
+        .body(Vec::new());
+      
+      match response {
+        Ok(r) => responder.respond(r),
+        Err(e) => {
+          let error_response = ResponseBuilder::new()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .header(CONTENT_TYPE, "text/plain")
+            .body(e.to_string().as_bytes().to_vec())
+            .unwrap();
+          responder.respond(error_response)
+        }
+      }
+    })
     .setup(move |app| {
       #[cfg(all(desktop, not(test)))]
       {
@@ -181,6 +204,8 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::open_electron_feature,
       cmd::is_electron_available,
       cmd::ensure_electron_sidecar,
+      cmd::register_streaming_protocol,
+      cmd::get_streaming_capabilities,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");

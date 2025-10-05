@@ -210,3 +210,40 @@ pub async fn ensure_electron_sidecar() -> Result<(), String> {
   }
   Err("not_installed".into())
 }
+
+/// Register a custom streaming protocol handler
+/// This command is a placeholder for demonstration purposes
+/// The actual protocol registration happens in the app builder
+#[command]
+pub async fn register_streaming_protocol() -> Result<(), String> {
+  // In a real implementation, this would register custom URI schemes
+  // for streaming protocols like HLS, DASH, etc.
+  // For now, we just return success to demonstrate the integration
+  log::info!("Streaming protocol registration requested");
+  Ok(())
+}
+
+/// Get information about streaming capabilities
+#[command]
+pub async fn get_streaming_capabilities() -> Result<StreamingCapabilities, String> {
+  let (_pkg, electron_bin) = detect_electron_binary();
+  
+  Ok(StreamingCapabilities {
+    hls_supported: true,
+    dash_supported: true,
+    widevine_drm: electron_bin.is_some(),
+    protocols: vec![
+      "http".to_string(),
+      "https".to_string(),
+      "stream".to_string(),
+    ],
+  })
+}
+
+#[derive(Debug, Serialize)]
+pub struct StreamingCapabilities {
+  pub hls_supported: bool,
+  pub dash_supported: bool,
+  pub widevine_drm: bool,
+  pub protocols: Vec<String>,
+}
