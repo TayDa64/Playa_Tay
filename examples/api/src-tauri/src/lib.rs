@@ -7,6 +7,7 @@ mod cmd;
 mod menu_plugin;
 #[cfg(desktop)]
 mod tray;
+pub mod streaming;
 
 // Re-export command functions for testing
 pub use cmd::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
@@ -50,6 +51,40 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
     )
     .plugin(tauri_plugin_sample::init())
     .setup(move |app| {
+      // Initialize SQLite database for streaming module
+      let db_path = app
+        .path()
+        .app_data_dir()
+        .expect("failed to get app data dir")
+        .join("streaming.db");
+
+      // Ensure parent directory exists
+      if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent).expect("failed to create data directory");
+      }
+
+      // Initialize database connection pool
+      let pool = tauri::async_runtime::block_on(async {
+        let database_url = format!("sqlite://{}?mode=rwc", db_path.display());
+        sqlx::sqlite::SqlitePoolOptions::new()
+          .max_connections(5)
+          .connect(&database_url)
+          .await
+          .expect("failed to connect to database")
+      });
+
+      // Run migrations
+      tauri::async_runtime::block_on(async {
+        // Read and execute migration file
+        let migration_sql = include_str!("../migrations/002_streaming_schema.sql");
+        sqlx::query(migration_sql)
+          .execute(&pool)
+          .await
+          .expect("failed to run migrations");
+      });
+
+      // Store pool in app state
+      app.manage(pool);
       #[cfg(all(desktop, not(test)))]
       {
         let handle = app.handle();
@@ -181,6 +216,15 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::open_electron_feature,
       cmd::is_electron_available,
       cmd::ensure_electron_sidecar,
+      // M1 Streaming Hub commands
+      streaming::get_watch_history,
+      streaming::get_watch_queue,
+      streaming::get_recommendations,
+      streaming::play_stream,
+      streaming::add_to_queue,
+      streaming::save_playback_progress,
+      streaming::remove_from_queue,
+      streaming::dismiss_recommendation,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");
