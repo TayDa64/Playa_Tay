@@ -7,9 +7,15 @@ mod cmd;
 mod menu_plugin;
 #[cfg(desktop)]
 mod tray;
+#[cfg(test)]
+mod streaming_tests;
 
 // Re-export command functions for testing
-pub use cmd::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
+pub use cmd::{
+  open_electron_feature, is_electron_available, ensure_electron_sidecar,
+  StreamItem, play_stream, add_to_queue, get_watch_history, 
+  save_watch_progress, get_recommendations
+};
 
 use serde::Serialize;
 use tauri::{
