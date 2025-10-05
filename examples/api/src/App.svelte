@@ -12,6 +12,7 @@
   import App from './views/App.svelte'
   import Menu from './views/Menu.svelte'
   import Tray from './views/Tray.svelte'
+  import StreamingHub from './views/StreamingHub.svelte'
 
   document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.key === 'b') {
@@ -28,6 +29,11 @@
   const isMobile = userAgent.includes('android') || userAgent.includes('iphone')
 
   const desktopViews = [
+    {
+      label: 'Streaming Hub',
+      component: StreamingHub,
+      icon: 'i-ph-play-circle'
+    },
     {
       label: 'App',
       component: App,

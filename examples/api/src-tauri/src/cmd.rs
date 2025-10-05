@@ -210,3 +210,71 @@ pub async fn ensure_electron_sidecar() -> Result<(), String> {
   }
   Err("not_installed".into())
 }
+
+// ===== M1: Streaming Hub Commands =====
+
+/// Represents a streaming content item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamItem {
+  pub id: String,
+  pub title: String,
+  pub url: String,
+  pub thumbnail: Option<String>,
+  pub provider: String, // "youtube", "twitch", "hls", "dash"
+  pub duration: Option<u32>, // seconds
+  pub watched_progress: Option<u32>, // seconds
+}
+
+/// Play a stream using the appropriate protocol handler
+/// For DRM content, uses Pattern A Electron integration
+#[command]
+pub async fn play_stream(item: StreamItem) -> Result<(), String> {
+  log::info!("Playing stream: {} ({})", item.title, item.provider);
+  
+  // Check if DRM content requires Electron
+  let requires_drm = item.provider == "widevine" || item.url.contains("drm");
+  
+  if requires_drm {
+    // Use Electron sidecar for DRM content
+    open_electron_feature(item.url).await
+  } else {
+    // For non-DRM content, can use native webview
+    // This is handled on the frontend with video.js or similar
+    Ok(())
+  }
+}
+
+/// Add item to watch queue
+#[command]
+pub fn add_to_queue(item: StreamItem) -> Result<(), String> {
+  log::info!("Adding to queue: {}", item.title);
+  // TODO: Persist to SQLite in future implementation
+  // For now, just log the action
+  Ok(())
+}
+
+/// Get watch history
+#[command]
+pub fn get_watch_history(limit: Option<u32>) -> Result<Vec<StreamItem>, String> {
+  log::info!("Fetching watch history (limit: {:?})", limit);
+  // TODO: Retrieve from SQLite in future implementation
+  // For now, return empty list
+  Ok(vec![])
+}
+
+/// Save watch progress
+#[command]
+pub fn save_watch_progress(id: String, progress: u32) -> Result<(), String> {
+  log::info!("Saving watch progress for {}: {} seconds", id, progress);
+  // TODO: Persist to SQLite in future implementation
+  Ok(())
+}
+
+/// Get recommendations based on watch history
+#[command]
+pub fn get_recommendations() -> Result<Vec<StreamItem>, String> {
+  log::info!("Fetching recommendations");
+  // TODO: Implement AI-based recommendations in future
+  // For now, return empty list
+  Ok(vec![])
+}

@@ -7,9 +7,15 @@ mod cmd;
 mod menu_plugin;
 #[cfg(desktop)]
 mod tray;
+#[cfg(test)]
+mod streaming_tests;
 
 // Re-export command functions for testing
-pub use cmd::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
+pub use cmd::{
+  open_electron_feature, is_electron_available, ensure_electron_sidecar,
+  StreamItem, play_stream, add_to_queue, get_watch_history, 
+  save_watch_progress, get_recommendations
+};
 
 use serde::Serialize;
 use tauri::{
@@ -181,6 +187,11 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::open_electron_feature,
       cmd::is_electron_available,
       cmd::ensure_electron_sidecar,
+      cmd::play_stream,
+      cmd::add_to_queue,
+      cmd::get_watch_history,
+      cmd::save_watch_progress,
+      cmd::get_recommendations,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");
