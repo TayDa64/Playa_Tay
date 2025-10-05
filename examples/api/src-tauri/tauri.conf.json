@@ -6,8 +6,7 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "pnpm -w -F @playa/electron-shell build && mkdir -p resources/electron-shell && cp -f ../../packages/electron-shell/dist/main.js resources/electron-shell/main.js && pnpm dev",
-  "beforeBuildCommand": "pnpm -w -F @playa/electron-shell build && mkdir -p resources/electron-shell && cp -f ../../packages/electron-shell/dist/main.js resources/electron-shell/main.js && pnpm --filter api build",
+    "beforeBuildCommand": "pnpm -w -F @playa/electron-shell build && mkdir -p resources/electron-shell && cp -f ../../packages/electron-shell/dist/main.js resources/electron-shell/main.js && pnpm --filter api build",
     "removeUnusedCommands": true
   },
   "app": {
