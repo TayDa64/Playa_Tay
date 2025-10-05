@@ -35,7 +35,7 @@ export interface OpenElectronFeatureOptions {
  * Open a feature that requires Electron (Pattern A/B)
  */
 export async function openElectronFeature(
-  url: string, 
+  url: string,
   options: OpenElectronFeatureOptions = { retry: true }
 ): Promise<OpenElectronFeatureResult> {
   try {
