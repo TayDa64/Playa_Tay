@@ -181,6 +181,11 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::open_electron_feature,
       cmd::is_electron_available,
       cmd::ensure_electron_sidecar,
+      cmd::play_stream,
+      cmd::add_to_queue,
+      cmd::get_watch_history,
+      cmd::save_watch_progress,
+      cmd::get_recommendations,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");
