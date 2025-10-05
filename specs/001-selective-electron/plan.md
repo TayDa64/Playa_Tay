@@ -1,3 +1,27 @@
+# Checklist Vigilance & Completion Instructions
+
+Before marking any phase or item as complete, follow this process:
+
+1. **Locate All Relevant Checklists:**
+	- Check for progress tracking, review, and acceptance checklists in all related files (e.g., `plan.md`, `spec.md`, `tasks.md`, and agent-specific docs).
+	- Review both markdown checkboxes and any checklist tables or lists.
+
+2. **Verify Deliverables:**
+	- For each checklist item, confirm that all required deliverables (contracts, data models, quickstart guides, code, tests, etc.) are present and meet the acceptance criteria.
+	- Cross-reference acceptance scenarios and functional requirements to ensure nothing is missed.
+
+3. **Document Evidence:**
+	- When possible, link to or summarize the location of each deliverable (file path, section, or commit).
+	- Note any open questions, TODOs, or deferred clarifications.
+
+4. **Only Check Off When Complete:**
+	- Do not mark a checklist item as complete until all evidence is reviewed and deliverables are verified.
+	- If in doubt, leave the item unchecked and document what is missing or unclear.
+
+5. **Communicate Status:**
+	- When updating checklists, communicate the status to the team or coding agent, especially if blockers or ambiguities remain.
+
+**Be vigilant:** Checklists may exist in multiple files and sections. Always search and review all relevant documentation before updating progress.
 # Implementation Plan: Selective Electron Integration (Pattern A/B)
 
 **Branch**: `[001-selective-electron]` | **Date**: 2025-10-03 | **Spec**: `./spec.md`
@@ -58,11 +82,13 @@ packages/electron-drm-shell/     # Pattern B outline
 ## Phase 0: Outline & Research
 - Unknowns: DRM/Widevine licensing and distribution [NEEDS CLARIFICATION]
 - Best practices: Electron sandboxing, CSP, localhost IPC; Tauri resource packaging
+ - Deliverable: See `./research.md` for Phase 0 research outcomes and evidence
 
 ## Phase 1: Design & Contracts
-- Entities: ElectronFeature (url, pattern, status), SidecarAuth (token)
-- Contracts: Tauri invoke `open_electron_feature(url) -> Result<(), code>`
-- Quickstart: Run host app; click UI button; Electron window appears only on demand
+- Entities: ElectronFeature (url, pattern, status), SidecarAuth (token). See `./data-model.md`.
+- Contracts: Tauri invoke `open_electron_feature(url) -> Result<(), code)`. See `./contracts/open_electron_feature.md`.
+- Quickstart: Run host app; click UI button; Electron window appears only on demand. See `./quickstart.md`.
+ - Manual checks: See `./VERIFICATION.md` for step-by-step acceptance validation.
 
 ## Phase 2: Task Planning Approach
 - Derive tasks from contracts and data model; tests before implementation
@@ -76,7 +102,7 @@ packages/electron-drm-shell/     # Pattern B outline
 | None | N/A | N/A |
 
 ## Progress Tracking
-- [ ] Phase 0: Research complete
+- [x] Phase 0: Research complete (see `./research.md`)
 - [ ] Phase 1: Design complete
 - [ ] Phase 2: Task planning complete
 - [ ] Phase 3: Tasks generated

@@ -138,8 +138,8 @@ The following [NEEDS CLARIFICATION] items are acknowledged and deferred to post-
 - [x] Ambiguities marked
 - [x] User scenarios defined
 - [x] Requirements generated
-- [ ] Entities identified (initial pass)
-- [ ] Review checklist passed
+- [x] Entities identified (initial pass)
+- [x] Review checklist passed
 
 ### playa Tay's application specification plan, implement without losing already established functionalities.
 Vision and scope alignment

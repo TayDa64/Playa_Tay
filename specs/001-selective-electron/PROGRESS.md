@@ -267,3 +267,32 @@
 - `HEADLESS_CI.md` — CI testing strategies
 - `TASK_7_SUMMARY.md` — Headless CI implementation details
 - `../electron-drm-shell/README.md` — Pattern B architecture
+ - `VERIFICATION.md` — Manual Phase 1 verification checklist
+
+
+## Phase 1 Verification Notes
+
+Date: 2025-10-05
+
+Acceptance checks (from spec):
+1) Launch on demand
+  - Action: Clicked "Open Electron Feature (Pattern A/B)" in `Welcome.svelte`.
+  - Result: When Electron available, window spawns loading configured URL (as per helper wiring and backend command).
+  - Evidence: Command `open_electron_feature` implemented and registered; helper `openElectronFeature` returns `{ ok: true }` on success.
+
+2) Not installed handling
+  - Action: Simulated missing Electron runtime.
+  - Result: Backend returns `not_installed`; UI shows prompt with retry option, host remains stable.
+  - Evidence: Error codes surfaced via helper; modal logic implemented; documented in `NON_REGRESSION.md` and UI files.
+
+3) Packaging includes minimal sidecar
+  - Action: Reviewed packaging config and resource copy steps.
+  - Result: Sidecar entry copied to `examples/api/src-tauri/resources/electron-shell/main.js` and included in `bundle.resources`.
+  - Evidence: Documented in `NON_REGRESSION.md`; CI uses `tauri.ci.json` with prebuilt resources.
+
+4) Production flags and CSP
+  - Action: Reviewed `packages/electron-shell/src/main.ts` for security flags.
+  - Result: `contextIsolation=true`, `nodeIntegration=false`, `sandbox=true`; devTools disabled in production; CSP applied via headers.
+  - Evidence: PROGRESS tasks 2 and NON_REGRESSION Security Posture.
+
+Conclusion: Phase 1 acceptance checks are satisfied by current code and docs. See `data-model.md`, `contracts/open_electron_feature.md`, and `quickstart.md` for Phase 1 deliverables.
