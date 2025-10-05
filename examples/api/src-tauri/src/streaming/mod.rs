@@ -7,4 +7,7 @@ pub mod db;
 pub mod models;
 pub mod providers;
 
+#[cfg(test)]
+mod tests;
+
 pub use commands::StreamingState;

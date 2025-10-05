@@ -204,7 +204,7 @@ impl YouTubeClient {
 }
 
 /// Parse ISO 8601 duration string (e.g., "PT1H2M10S") to seconds
-fn parse_iso8601_duration(duration: &str) -> Option<u64> {
+pub fn parse_iso8601_duration(duration: &str) -> Option<u64> {
     // Simple parser for YouTube's ISO 8601 duration format
     // Format: PT[hours]H[minutes]M[seconds]S
     if !duration.starts_with("PT") {
