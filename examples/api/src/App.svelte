@@ -6,6 +6,7 @@
   import { setTheme } from '@tauri-apps/api/app'
 
   import Welcome from './views/Welcome.svelte'
+  import StreamingHub from './views/StreamingHub.svelte'
   import Communication from './views/Communication.svelte'
   import Window from './views/Window.svelte'
   import WebRTC from './views/WebRTC.svelte'
@@ -55,6 +56,11 @@
       label: 'Welcome',
       component: Welcome,
       icon: 'i-ph-hand-waving'
+    },
+    {
+      label: 'M1: Streaming Hub',
+      component: StreamingHub,
+      icon: 'i-ph-play-circle'
     },
     {
       label: 'Communication',

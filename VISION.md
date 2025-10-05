@@ -647,7 +647,7 @@ UserTraits {
 
 ### v1.0 — Foundation (Q4 2025)
 - ✅ Selective Electron integration (Pattern A)
-- [ ] M1: Streaming Hub (YouTube, Twitch)
+- ✅ M1: Streaming Hub (YouTube, Twitch) - Basic implementation with UI, queue, history
 - [ ] M2: Terminal/CLI
 - [ ] M5: Unified Search
 - [ ] M6: Settings + Privacy Diary
