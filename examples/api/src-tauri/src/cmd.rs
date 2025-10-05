@@ -116,15 +116,20 @@ pub async fn launch_electron(url: String) -> Result<(), String> {
   // In dev, the current dir is typically examples/api. The sidecar lives at ../../packages/electron-shell
   let (electron_pkg_dir, electron_bin) = detect_electron_binary();
   if electron_bin.is_none() {
-    return Err(ElectronError::NotInstalled(
-      "Electron binary not found. Run 'pnpm -F @playa/electron-shell install' in dev.".to_string()
-    ).into());
+    return Err(
+      ElectronError::NotInstalled(
+        "Electron binary not found. Run 'pnpm -F @playa/electron-shell install' in dev."
+          .to_string(),
+      )
+      .into(),
+    );
   }
   let electron_pkg_dir = electron_pkg_dir.expect("pkg dir");
   let electron_bin = electron_bin.expect("bin path");
 
   let mut cmd = Command::new(&electron_bin);
-  cmd.current_dir(&electron_pkg_dir)
+  cmd
+    .current_dir(&electron_pkg_dir)
     .env("ELECTRON_TARGET_URL", &url)
     .env("PLAYA_AUTH_TOKEN", &auth_token)
     .env("ELECTRON_ENABLE_SECURITY_WARNINGS", "true")
@@ -209,4 +214,115 @@ pub async fn ensure_electron_sidecar() -> Result<(), String> {
     return Ok(());
   }
   Err("not_installed".into())
+}
+
+// ========== M1: Streaming Hub Commands ==========
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Video {
+  pub id: String,
+  pub title: String,
+  pub provider: String,
+  pub url: String,
+  pub thumbnail: String,
+  pub duration: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub watched_at: Option<String>,
+  #[serde(default)]
+  pub requires_drm: bool,
+}
+
+/// Open a video URL in the appropriate player
+#[command]
+pub async fn open_video(url: String) -> Result<(), String> {
+  use std::process::Command;
+
+  // For now, open in default browser
+  // In production, this would integrate with a native player
+  #[cfg(target_os = "windows")]
+  {
+    Command::new("cmd")
+      .args(["/c", "start", &url])
+      .spawn()
+      .map_err(|e| format!("Failed to open video: {}", e))?;
+  }
+
+  #[cfg(target_os = "macos")]
+  {
+    Command::new("open")
+      .arg(&url)
+      .spawn()
+      .map_err(|e| format!("Failed to open video: {}", e))?;
+  }
+
+  #[cfg(target_os = "linux")]
+  {
+    Command::new("xdg-open")
+      .arg(&url)
+      .spawn()
+      .map_err(|e| format!("Failed to open video: {}", e))?;
+  }
+
+  Ok(())
+}
+
+/// Get watch history (placeholder - would read from database)
+#[command]
+pub async fn get_watch_history() -> Result<Vec<Video>, String> {
+  // Placeholder: Return empty array
+  // In production, this would read from SQLite database
+  Ok(vec![])
+}
+
+/// Get watch queue (placeholder - would read from database)
+#[command]
+pub async fn get_watch_queue() -> Result<Vec<Video>, String> {
+  // Placeholder: Return empty array
+  // In production, this would read from SQLite database
+  Ok(vec![])
+}
+
+/// Add video to watch queue
+#[command]
+pub async fn add_to_watch_queue(video: Video) -> Result<(), String> {
+  // Placeholder: Log the action
+  log::info!("Adding to watch queue: {:?}", video.title);
+  // In production, this would write to SQLite database
+  Ok(())
+}
+
+/// Remove video from watch queue
+#[command]
+pub async fn remove_from_watch_queue(video_id: String) -> Result<(), String> {
+  // Placeholder: Log the action
+  log::info!("Removing from watch queue: {}", video_id);
+  // In production, this would delete from SQLite database
+  Ok(())
+}
+
+/// Add video to watch history
+#[command]
+pub async fn add_to_watch_history(video: Video) -> Result<(), String> {
+  // Placeholder: Log the action
+  log::info!("Adding to watch history: {:?}", video.title);
+  // In production, this would write to SQLite database
+  Ok(())
+}
+
+/// Clear watch history
+#[command]
+pub async fn clear_watch_history() -> Result<(), String> {
+  // Placeholder: Log the action
+  log::info!("Clearing watch history");
+  // In production, this would delete from SQLite database
+  Ok(())
+}
+
+/// Search videos (placeholder - would integrate with provider APIs)
+#[command]
+pub async fn search_videos(query: String, provider: String) -> Result<Vec<Video>, String> {
+  // Placeholder: Log the search
+  log::info!("Searching {} for: {}", provider, query);
+  // In production, this would call provider APIs (YouTube, Twitch, etc.)
+  Ok(vec![])
 }
