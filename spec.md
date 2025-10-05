@@ -1,8 +1,8 @@
 # Playa Tay – Application Specification Plan
 
-### playa Tay's application specification plan, implement without losing already established functionalities.
+This document is the top-level specification for Playa Tay. It articulates current implementation status, locks in non-regression invariants, and points to detailed feature specs and plans maintained under `specs/`.
 
-This document is the top-level specification for Playa Tay. It articulates the vision, locks in current invariants so we don’t regress, and points to detailed feature specs and plans maintained under `specs/`.
+**For the broader application vision and architecture blueprint, see [VISION.md](./VISION.md).**
 
 ## Overview
 - Tauri-first desktop app with selective Electron usage for niche capabilities (e.g., DRM) without bloating or weakening the base app.
