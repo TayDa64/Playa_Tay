@@ -12,6 +12,7 @@
   import App from './views/App.svelte'
   import Menu from './views/Menu.svelte'
   import Tray from './views/Tray.svelte'
+  import StreamingHub from './views/StreamingHub.svelte'
 
   document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.key === 'b') {
@@ -55,6 +56,11 @@
       label: 'Welcome',
       component: Welcome,
       icon: 'i-ph-hand-waving'
+    },
+    {
+      label: 'Streaming Hub',
+      component: StreamingHub,
+      icon: 'i-ph-play-circle'
     },
     {
       label: 'Communication',
