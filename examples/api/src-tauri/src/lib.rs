@@ -7,6 +7,7 @@ mod cmd;
 mod menu_plugin;
 #[cfg(desktop)]
 mod tray;
+mod streaming;
 
 // Re-export command functions for testing
 pub use cmd::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
@@ -50,6 +51,23 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
     )
     .plugin(tauri_plugin_sample::init())
     .setup(move |app| {
+      // Initialize streaming module state
+      let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+      std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
+      let db_path = app_data_dir.join("streaming.db");
+      
+      let streaming_db = streaming::db::StreamingDb::new(db_path)
+        .expect("Failed to initialize streaming database");
+      
+      // Get YouTube API key from environment variable
+      let youtube_api_key = std::env::var("YOUTUBE_API_KEY").ok();
+      let youtube_client = streaming::providers::youtube::YouTubeClient::new(youtube_api_key);
+      
+      app.manage(streaming::StreamingState {
+        db: std::sync::Arc::new(streaming_db),
+        youtube_client: std::sync::Arc::new(youtube_client),
+      });
+
       #[cfg(all(desktop, not(test)))]
       {
         let handle = app.handle();
@@ -181,6 +199,16 @@ pub fn run_app<R: Runtime, F: FnOnce(&App<R>) + Send + 'static>(
       cmd::open_electron_feature,
       cmd::is_electron_available,
       cmd::ensure_electron_sidecar,
+      streaming::commands::open_streaming_hub,
+      streaming::commands::search_youtube,
+      streaming::commands::add_to_queue,
+      streaming::commands::remove_from_queue,
+      streaming::commands::get_watch_queue,
+      streaming::commands::save_watch_progress,
+      streaming::commands::get_watch_history,
+      streaming::commands::clear_watch_history,
+      streaming::commands::set_streaming_consent,
+      streaming::commands::check_streaming_consent,
     ])
     .build(tauri::tauri_build_context!())
     .expect("error while building tauri application");
