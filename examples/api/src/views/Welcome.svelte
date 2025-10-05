@@ -1,6 +1,7 @@
 <script>
   import { invoke } from '@tauri-apps/api/core'
   import { openElectronFeature, isElectronAvailable } from '../lib/electronFeature.js'
+  import { openStreamingHub } from '../lib/streaming/api'
   import {
     getName,
     getVersion,
@@ -84,6 +85,15 @@
   function closeModal() {
     showModal = false
   }
+
+  async function openStreaming() {
+    try {
+      await openStreamingHub()
+      onMessage({ status: 'ok', action: 'openStreamingHub' })
+    } catch (error) {
+      onMessage({ status: 'error', action: 'openStreamingHub', error: error.toString() })
+    }
+  }
 </script>
 
 <div class="grid gap-8 justify-items-start">
@@ -114,6 +124,10 @@
     {:else if electronAvailable === false}
       <span class="text-xs">(unavailable)</span>
     {/if}
+  </button>
+  <button class="btn" onclick={openStreaming}>
+    <span class="i-ph-play-circle"></span>
+    Open Streaming Hub (M1)
   </button>
 </div>
 

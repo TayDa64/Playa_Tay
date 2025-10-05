@@ -5,10 +5,27 @@
 import 'uno.css'
 import './app.css'
 import App from './App.svelte'
+import Streaming from './views/Streaming.svelte'
 import { mount } from 'svelte'
 
-const app = mount(App, {
-  target: document.querySelector('#app')
+// Simple router based on URL path
+const path = window.location.pathname
+
+let component
+let props = {}
+
+if (path === '/streaming') {
+  component = Streaming
+  props = {
+    onMessage: (msg) => console.log('[Streaming]', msg)
+  }
+} else {
+  component = App
+}
+
+const app = mount(component, {
+  target: document.querySelector('#app'),
+  props
 })
 
 export default app
