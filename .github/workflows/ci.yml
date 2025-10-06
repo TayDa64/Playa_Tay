@@ -91,3 +91,44 @@ jobs:
         with:
           name: example-api-build-zips
           path: artifacts/*.zip
+
+  download-smoke-test:
+    name: Optional local download smoke test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build examples (best effort)
+        run: |
+          set -e
+          cargo build --examples || true
+
+      - name: Run local download smoke test (no external network)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -x target/debug/examples/basic_download ]; then
+            echo "Running local download smoke test against 127.0.0.1"
+            TMPDIR=$(mktemp -d)
+            echo -n "hello-world" > "$TMPDIR/file.bin"
+            PORT=8089
+            # Start a simple local HTTP server serving the temp dir
+            python3 -m http.server "$PORT" --directory "$TMPDIR" &
+            SERVER_PID=$!
+            # Wait for server to be ready by probing the index
+            for i in {1..20}; do
+              if curl -sSf "http://127.0.0.1:$PORT/" > /dev/null; then break; fi
+              sleep 0.2
+            done
+            OUT=$(mktemp)
+            target/debug/examples/basic_download "http://127.0.0.1:$PORT/file.bin" "$OUT"
+            diff -q "$OUT" "$TMPDIR/file.bin"
+            kill $SERVER_PID || true
+          else
+            echo "Skipping: target/debug/examples/basic_download not found."
+          fi
