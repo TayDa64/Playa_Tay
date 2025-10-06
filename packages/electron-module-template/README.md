@@ -33,8 +33,8 @@ packages/electron-module-template/
 │   ├── entitlements.mac.plist    # macOS sandboxing entitlements
 │   └── notarize.js               # macOS notarization script
 ├── assets/
-│   ├── icon.svg                  # App icon (replace with PNG)
-│   └── background.svg            # Installer background (replace with PNG)
+│   ├── icon.svg                  # App icon (convert to PNG for production)
+│   └── background.svg            # Installer background (convert to PNG for production)
 ├── electron-builder.yml          # Multi-platform build config
 ├── package.json
 ├── tsconfig.json
@@ -180,6 +180,23 @@ Tests include:
 - Preload API exposure contract
 
 ## 📦 Building for Distribution
+
+### Asset Requirements
+
+Before building for production, replace the SVG assets with high-quality PNG files:
+
+- **Icon**: `assets/icon.png` - 1024x1024 PNG (macOS/Linux) or 256x256 ICO (Windows)
+- **Background**: `assets/background.png` - 540x380 PNG (macOS DMG installer background)
+
+The SVG files provided are placeholders for development. For production builds:
+
+```bash
+# Convert SVG to PNG (requires ImageMagick or similar)
+convert assets/icon.svg -resize 1024x1024 assets/icon.png
+convert assets/background.svg -resize 540x380 assets/background.png
+
+# Or use online tools like https://svgtopng.com
+```
 
 ### macOS
 
