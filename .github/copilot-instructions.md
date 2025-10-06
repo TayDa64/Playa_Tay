@@ -27,8 +27,8 @@ This repository is the monorepo for the Tauri framework, a toolkit for building 
 ## Architecture & Key Components
 - **Core Crates**: `crates/tauri` (main orchestrator), `tauri-build`, `tauri-codegen`, `tauri-macros`, `tauri-runtime`, `tauri-runtime-wry`, `tauri-utils`.
 - **Tooling**: `crates/tauri-cli` (Rust CLI), `packages/cli` (JS wrapper), `packages/api` (JS/TS API for frontend integration), `crates/tauri-bundler` (packaging), `create-tauri-app` (scaffolding new projects).
-- **Plugins**: Extend Tauri via Rust and JS glue code. See `crates/tauri-plugin` and [plugin docs](https://v2.tauri.app/develop/plugins/).
-- **External Dependencies**: Uses [TAO](https://github.com/tauri-apps/tao) for windowing and [WRY](https://github.com/tauri-apps/wry) for webview abstraction.
+- **Plugins**: Extend Tauri via Rust and JS glue code. See `crates/tauri-plugin` and plugin docs: https://v2.tauri.app/develop/plugins/
+- **External Dependencies**: Uses TAO (https://github.com/tauri-apps/tao) for windowing and WRY (https://github.com/tauri-apps/wry) for webview abstraction.
 
 ## Developer Workflows
 - **Build (Rust)**: Use `cargo build` in the relevant crate directory.
@@ -52,8 +52,8 @@ This repository is the monorepo for the Tauri framework, a toolkit for building 
 
 ## Special Notes
 - **Plugins**: Author plugins by providing Rust code, JS glue, and API surface. See `crates/tauri-plugin`.
-- **CI/CD**: Uses GitHub Actions (see `.github/workflows/`). Official [tauri-action](https://github.com/tauri-apps/tauri-action) for cross-platform builds.
+- **CI/CD**: Uses GitHub Actions (see `.github/workflows/`). Official tauri-action: https://github.com/tauri-apps/tauri-action for cross-platform builds.
 - **Licensing**: MIT or Apache-2.0. See `LICENSE*` files for details.
 
 ---
-For more, see [tauri.app](https://tauri.app) and the [official docs](https://v2.tauri.app/).
+For more, see https://tauri.app and https://v2.tauri.app/
