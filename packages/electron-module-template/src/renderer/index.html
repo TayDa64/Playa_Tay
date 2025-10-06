@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Playa Module Template</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎯 Playa Module Template</h1>
+      <p class="subtitle">Secure Electron Module with Best Practices</p>
+    </header>
+
+    <main>
+      <section class="info-card">
+        <h2>🔒 Security Features</h2>
+        <ul>
+          <li><strong>Context Isolation:</strong> Enabled ✅</li>
+          <li><strong>Node Integration:</strong> Disabled ✅</li>
+          <li><strong>Sandbox:</strong> Enabled ✅</li>
+          <li><strong>Content Security Policy:</strong> Enforced ✅</li>
+          <li><strong>IPC Authentication:</strong> Token-based ✅</li>
+        </ul>
+      </section>
+
+      <section class="info-card">
+        <h2>📦 Module Information</h2>
+        <div id="module-info">
+          <p><strong>Platform:</strong> <span id="platform">Loading...</span></p>
+          <p><strong>Node:</strong> <span id="node-version">Loading...</span></p>
+          <p><strong>Chrome:</strong> <span id="chrome-version">Loading...</span></p>
+          <p><strong>Electron:</strong> <span id="electron-version">Loading...</span></p>
+        </div>
+      </section>
+
+      <section class="info-card">
+        <h2>🚀 Getting Started</h2>
+        <ol>
+          <li>Review the security helpers in <code>src/security/</code></li>
+          <li>Customize the renderer UI in <code>src/renderer/</code></li>
+          <li>Add your module-specific functionality</li>
+          <li>Test with <code>pnpm dev</code></li>
+          <li>Build with <code>pnpm build:mac|win|linux</code></li>
+        </ol>
+      </section>
+    </main>
+
+    <footer>
+      <p>Built with ❤️ using secure Electron practices</p>
+    </footer>
+  </div>
+
+  <script>
+    // Access the exposed API safely
+    if (window.electronAPI) {
+      document.getElementById('platform').textContent = window.electronAPI.platform;
+      document.getElementById('node-version').textContent = window.electronAPI.versions.node;
+      document.getElementById('chrome-version').textContent = window.electronAPI.versions.chrome;
+      document.getElementById('electron-version').textContent = window.electronAPI.versions.electron;
+    }
+  </script>
+</body>
+</html>
