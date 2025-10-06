@@ -1,0 +1,44 @@
+name: YOLO Open Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'If true, only logs planned issues without creating them'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      phases:
+        description: 'Optional comma-separated phases to include (e.g., 2.1,2.2,2.3)'
+        required: false
+        default: ''
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies for yolo script
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm install @octokit/rest@20
+
+      - name: Open issues from Phase 2 tickets (YOLO mode)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          PHASES: ${{ inputs.phases }}
+        run: node scripts/yolo-open-issues.js

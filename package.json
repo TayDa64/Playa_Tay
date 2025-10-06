@@ -4,11 +4,13 @@
   "license": "Apache-2.0 OR MIT",
   "private": true,
   "contributors": [
-    "Tauri Programme within The Commons Conservancy"
+    {
+      "name": "Tauri Programme within The Commons Conservancy"
+    }
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/tauri-apps/tauri.git"
+    "url": "git+https://github.com/tauri-apps/tauri.git"
   },
   "scripts": {
     "format": "prettier --write .",
@@ -44,5 +46,19 @@
       "workerd",
       "electron"
     ]
+  },
+  "description": "<img src=\".github/splash.png\" alt=\"Tauri\" />",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/tauri-apps/tauri/issues"
+  },
+  "homepage": "https://github.com/tauri-apps/tauri#readme",
+  "dependencies": {
+    "@octokit/rest": "^20.1.2"
   }
 }
