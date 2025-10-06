@@ -1,0 +1,61 @@
+appId: com.playa.module.template
+productName: Playa Module Template
+
+directories:
+  output: dist-packages
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - package.json
+  - "!**/.vscode/*"
+  - "!src/*"
+  - "!__tests__/*"
+  - "!electron-builder.yml"
+  - "!*.ts"
+  - "!*.md"
+
+mac:
+  category: public.app-category.utilities
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  icon: assets/icon.png
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+
+dmg:
+  background: assets/background.png
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+win:
+  target: nsis
+  icon: assets/icon.png
+  certificateSubjectName: "Playa Technologies Inc"
+  signingHashAlgorithms:
+    - sha256
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+
+linux:
+  target:
+    - target: deb
+      arch: x64
+    - target: rpm
+      arch: x64
+  category: Utility
+  icon: assets/icon.png

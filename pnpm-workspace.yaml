@@ -3,6 +3,7 @@ packages:
   - packages/cli
   - packages/electron-shell
   - packages/electron-drm-shell
+  - packages/electron-module-template
   - crates/tauri-schema-worker
   - examples/api
   - examples/resources
