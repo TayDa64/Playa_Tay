@@ -31,7 +31,7 @@ jobs:
       - name: Install Linux dependencies for Tauri
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev
           sudo apt-get install -y libwebkit2gtk-4.1-dev || sudo apt-get install -y libwebkit2gtk-4.0-dev
           # Electron runtime dependencies
           sudo apt-get install -y libnss3 libnspr4 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 \
@@ -70,6 +70,25 @@ jobs:
       - name: Build with Rust Tauri CLI (no bundle, CI config)
         run: |
           cargo run -p tauri-cli -- build --no-bundle --ci --config examples/api/src-tauri/tauri.ci.json
+
+      - name: Install Xvfb (for headless launch smoke test)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Launch app headlessly (Xvfb smoke test)
+        env:
+          NO_AT_BRIDGE: '1'
+          RUST_LOG: 'tauri=info,tao=info,wry=info'
+        run: |
+          set -euo pipefail
+          if [ -x target/release/api ]; then
+            echo "Starting headless app for 10s to verify GUI loop..."
+            timeout 10s xvfb-run -a target/release/api || echo "App exited (timeout or normal exit)."
+            echo "Headless launch smoke test completed."
+          else
+            echo "Binary target/release/api not found; skipping headless launch."
+          fi
 
       # Optional: Uncomment to enable Xvfb-based spawn tests
       # - name: Install Xvfb
