@@ -116,15 +116,20 @@ pub async fn launch_electron(url: String) -> Result<(), String> {
   // In dev, the current dir is typically examples/api. The sidecar lives at ../../packages/electron-shell
   let (electron_pkg_dir, electron_bin) = detect_electron_binary();
   if electron_bin.is_none() {
-    return Err(ElectronError::NotInstalled(
-      "Electron binary not found. Run 'pnpm -F @playa/electron-shell install' in dev.".to_string()
-    ).into());
+    return Err(
+      ElectronError::NotInstalled(
+        "Electron binary not found. Run 'pnpm -F @playa/electron-shell install' in dev."
+          .to_string(),
+      )
+      .into(),
+    );
   }
   let electron_pkg_dir = electron_pkg_dir.expect("pkg dir");
   let electron_bin = electron_bin.expect("bin path");
 
   let mut cmd = Command::new(&electron_bin);
-  cmd.current_dir(&electron_pkg_dir)
+  cmd
+    .current_dir(&electron_pkg_dir)
     .env("ELECTRON_TARGET_URL", &url)
     .env("PLAYA_AUTH_TOKEN", &auth_token)
     .env("ELECTRON_ENABLE_SECURITY_WARNINGS", "true")
