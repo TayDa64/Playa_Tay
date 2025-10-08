@@ -71,24 +71,58 @@ jobs:
         run: |
           cargo run -p tauri-cli -- build --no-bundle --ci --config examples/api/src-tauri/tauri.ci.json
 
-      - name: Install Xvfb (for headless launch smoke test)
+      - name: Install Xvfb and screenshot tools (headless smoke test)
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y xvfb x11-apps imagemagick
 
-      - name: Launch app headlessly (Xvfb smoke test)
+      - name: Launch app headlessly and capture screenshot (Xvfb)
         env:
           NO_AT_BRIDGE: '1'
           RUST_LOG: 'tauri=info,tao=info,wry=info'
         run: |
           set -euo pipefail
+          BIN=""
           if [ -x target/release/api ]; then
-            echo "Starting headless app for 10s to verify GUI loop..."
-            timeout 10s xvfb-run -a target/release/api || echo "App exited (timeout or normal exit)."
-            echo "Headless launch smoke test completed."
-          else
-            echo "Binary target/release/api not found; skipping headless launch."
+            BIN="target/release/api"
+          elif [ -x examples/api/src-tauri/target/release/api ]; then
+            BIN="examples/api/src-tauri/target/release/api"
           fi
+          if [ -z "$BIN" ]; then
+            echo "App binary not found; skipping headless launch."
+            exit 0
+          fi
+
+          echo "Starting Xvfb on :99 and launching $BIN..."
+          Xvfb :99 -screen 0 1280x800x24 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          mkdir -p artifacts
+
+          # Start app in background, allow it to render, then capture screenshot
+          ( timeout 12s "$BIN" || true ) &
+          APP_PID=$!
+          # Wait up to ~5s for first frame
+          for i in $(seq 1 25); do
+            sleep 0.2
+            # Attempt capture once display is ready
+            if xset q >/dev/null 2>&1; then
+              break
+            fi
+          done
+          # Capture root window image
+          xwd -root -silent | convert xwd:- png:artifacts/headless-screenshot.png || echo "Screenshot capture failed."
+          # Cleanup
+          kill $APP_PID 2>/dev/null || true
+          kill $XVFB_PID 2>/dev/null || true
+          echo "Headless launch + screenshot completed."
+
+      - name: Upload headless screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-screenshot
+          path: artifacts/headless-screenshot.png
 
       # Optional: Uncomment to enable Xvfb-based spawn tests
       # - name: Install Xvfb
