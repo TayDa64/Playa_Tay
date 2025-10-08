@@ -131,7 +131,7 @@ jobs:
               for (const task of tasks) {
                 const issueTitle = task.title;
                 const issueBody = task.body + '\n\n---\n\n- [ ] Agent MUST read and follow .github/copilot-instructions.md before starting.\n- [ ] Follow Tauri-first architecture and repo conventions.\n- [ ] TypeScript: avoid any; use unknown + guards.\n- [ ] Do not use sleep in terminal commands.';
-                const labels = task.labels.length > 0 ? task.labels : [`phase-${phase}`];
+                const labels = task.labels.length > 0 ? [...task.labels, 'yolo'] : [`phase-${phase}`, 'yolo'];
                 
                 if (dryRun) {
                   core.info(`[DRY RUN] Would create issue: ${issueTitle}`);
