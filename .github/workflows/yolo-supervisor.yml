@@ -13,8 +13,6 @@ on:
         description: 'PR label to monitor (e.g., yolo)'
         required: false
         default: 'yolo'
-  schedule:
-    - cron: '*/7 * * * *'
   workflow_run:
     workflows:
       - 'check formatting'
