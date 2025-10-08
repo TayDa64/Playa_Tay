@@ -1,0 +1,38 @@
+{
+  "$schema": "../../crates/tauri-schema-generator/schemas/config.schema.json",
+  "productName": "M1 Streaming Hub",
+  "version": "0.1.0",
+  "identifier": "com.playa-tay.streaming-hub",
+  "build": {
+    "frontendDist": ["index.html"]
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "M1 Streaming Hub - Multi-View Streaming",
+        "width": 1200,
+        "height": 800
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; media-src stream: http://stream.localhost 'self'; style-src 'self' 'unsafe-inline'",
+      "assetProtocol": {
+        "scope": ["**/streaming_example_test_video.mp4"]
+      },
+      "dangerousDisableAssetCspModification": false,
+      "capabilities": []
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "../.icons/32x32.png",
+      "../.icons/128x128.png",
+      "../.icons/128x128@2x.png",
+      "../.icons/icon.icns",
+      "../.icons/icon.ico"
+    ]
+  }
+}

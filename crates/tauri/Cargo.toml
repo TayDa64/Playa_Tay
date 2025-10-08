@@ -256,6 +256,11 @@ name = "streaming"
 path = "../../examples/streaming/main.rs"
 
 [[example]]
+name = "streaming-hub"
+path = "../../examples/streaming-hub/main.rs"
+required-features = ["unstable"]
+
+[[example]]
 name = "isolation"
 path = "../../examples/isolation/main.rs"
 required-features = ["isolation"]

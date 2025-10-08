@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src ipc: http://ipc.localhost; media-src stream: http://stream.localhost 'self'; style-src 'self' 'unsafe-inline'" />
+    <title>M1 Streaming Hub</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      .streaming-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: #111;
+      }
+      
+      .stream-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 12px 20px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+      
+      .stream-header h1 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+      }
+      
+      .stream-status {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+      
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+      }
+      
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4ade80;
+        animation: pulse 2s infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      .stream-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 2px;
+        background: #222;
+        padding: 2px;
+      }
+      
+      .stream-panel {
+        background: #000;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      
+      .stream-panel video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      
+      .stream-label {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+      }
+      
+      .stream-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 8px 16px;
+        border-radius: 20px;
+        display: flex;
+        gap: 12px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        backdrop-filter: blur(10px);
+      }
+      
+      .stream-panel:hover .stream-controls {
+        opacity: 1;
+      }
+      
+      .control-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px 8px;
+        transition: transform 0.2s;
+      }
+      
+      .control-btn:hover {
+        transform: scale(1.1);
+      }
+      
+      .loading-spinner {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="streaming-container">
+      <div class="stream-header">
+        <h1>🎬 M1 Streaming Hub</h1>
+        <div class="stream-status">
+          <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span>Live</span>
+          </div>
+          <div class="status-indicator">
+            <span>4 Streams Active</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stream-grid">
+        <div class="stream-panel" id="panel1">
+          <div class="stream-label">Stream 1 - Primary</div>
+          <video id="video1" controls autoplay name="media">
+            <source type="video/mp4" />
+          </video>
+          <div class="stream-controls">
+            <button class="control-btn" onclick="togglePlay('video1')">⏯️</button>
+            <button class="control-btn" onclick="toggleMute('video1')">🔊</button>
+          </div>
+        </div>
+        
+        <div class="stream-panel" id="panel2">
+          <div class="stream-label">Stream 2 - Secondary</div>
+          <video id="video2" controls name="media">
+            <source type="video/mp4" />
+          </video>
+          <div class="stream-controls">
+            <button class="control-btn" onclick="togglePlay('video2')">⏯️</button>
+            <button class="control-btn" onclick="toggleMute('video2')">🔊</button>
+          </div>
+        </div>
+        
+        <div class="stream-panel" id="panel3">
+          <div class="stream-label">Stream 3 - Tertiary</div>
+          <video id="video3" controls name="media">
+            <source type="video/mp4" />
+          </video>
+          <div class="stream-controls">
+            <button class="control-btn" onclick="togglePlay('video3')">⏯️</button>
+            <button class="control-btn" onclick="toggleMute('video3')">🔊</button>
+          </div>
+        </div>
+        
+        <div class="stream-panel" id="panel4">
+          <div class="stream-label">Stream 4 - Quaternary</div>
+          <video id="video4" controls name="media">
+            <source type="video/mp4" />
+          </video>
+          <div class="stream-controls">
+            <button class="control-btn" onclick="togglePlay('video4')">⏯️</button>
+            <button class="control-btn" onclick="toggleMute('video4')">🔊</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { invoke, convertFileSrc } = window.__TAURI__.core;
+      
+      // Initialize all video streams
+      function initializeStreams() {
+        const videoIds = ['video1', 'video2', 'video3', 'video4'];
+        
+        videoIds.forEach((videoId, index) => {
+          const video = document.getElementById(videoId);
+          const source = document.createElement('source');
+          source.type = 'video/mp4';
+          // Each stream uses the same video file via the custom stream protocol
+          // In production, these would point to different stream URLs
+          source.src = convertFileSrc('streaming_example_test_video.mp4', 'stream');
+          video.appendChild(source);
+          video.load();
+          
+          // Add event listeners for stream monitoring
+          video.addEventListener('loadstart', () => {
+            console.log(`Stream ${index + 1}: Loading started`);
+          });
+          
+          video.addEventListener('canplay', () => {
+            console.log(`Stream ${index + 1}: Ready to play`);
+          });
+          
+          video.addEventListener('error', (e) => {
+            console.error(`Stream ${index + 1}: Error loading`, e);
+          });
+        });
+      }
+      
+      // Control functions
+      function togglePlay(videoId) {
+        const video = document.getElementById(videoId);
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      }
+      
+      function toggleMute(videoId) {
+        const video = document.getElementById(videoId);
+        video.muted = !video.muted;
+      }
+      
+      // Initialize streams when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeStreams();
+        console.log('M1 Streaming Hub initialized with 4 isolated streams');
+      });
+    </script>
+  </body>
+</html>
