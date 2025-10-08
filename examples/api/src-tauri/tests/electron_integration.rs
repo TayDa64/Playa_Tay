@@ -6,7 +6,7 @@
 
 #[cfg(test)]
 mod tests {
-  use api_lib::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
+  use api_lib::{ensure_electron_sidecar, is_electron_available, open_electron_feature};
 
   /// Test that open_electron_feature returns appropriate error when Electron is not installed
   #[tokio::test]
@@ -17,7 +17,10 @@ mod tests {
     if !available {
       // If not available, open_electron_feature should return not_installed error
       let result = open_electron_feature("https://example.com".to_string()).await;
-      assert!(result.is_err(), "Should return error when Electron not installed");
+      assert!(
+        result.is_err(),
+        "Should return error when Electron not installed"
+      );
 
       let error = result.unwrap_err();
       assert!(
@@ -66,7 +69,10 @@ mod tests {
 
     if available {
       // Only test spawning if DISPLAY is set (not headless)
-      if std::env::var("DISPLAY").is_ok() || cfg!(target_os = "windows") || cfg!(target_os = "macos") {
+      if std::env::var("DISPLAY").is_ok()
+        || cfg!(target_os = "windows")
+        || cfg!(target_os = "macos")
+      {
         let result = open_electron_feature("https://example.com".to_string()).await;
 
         // Should either succeed or fail with spawn_error (but not not_installed)

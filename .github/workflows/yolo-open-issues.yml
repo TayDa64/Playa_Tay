@@ -1,0 +1,185 @@
+name: YOLO Open Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      phases:
+        description: 'Comma-separated phases to create issues for (e.g., 2.4,2.5,2.6)'
+        required: true
+        default: ''
+      dry_run:
+        description: 'Dry run mode (true/false) - if true, only show what would be created'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  open-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Parse and create issues
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const phases = '${{ github.event.inputs.phases }}'.split(',').map(p => p.trim());
+            const dryRun = '${{ github.event.inputs.dry_run }}' === 'true';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            core.info(`Processing phases: ${phases.join(', ')}`);
+            core.info(`Dry run: ${dryRun}`);
+            
+            // Helper to parse a ticket file and extract tasks
+            function parseTicketFile(content, phase) {
+              const tasks = [];
+              const lines = content.split('\n');
+              let currentTask = null;
+              let inTask = false;
+              let taskContent = [];
+              
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Match task headers like ## [Phase 2.4][Task 1] Title
+                const taskMatch = line.match(/^##\s*\[Phase\s+[\d.]+\]\[Task\s+(\d+)\]\s+(.+)$/);
+                if (taskMatch) {
+                  // Save previous task if exists
+                  if (currentTask) {
+                    currentTask.body = taskContent.join('\n').trim();
+                    tasks.push(currentTask);
+                  }
+                  
+                  // Start new task
+                  const taskNum = taskMatch[1];
+                  const title = taskMatch[2].trim();
+                  currentTask = {
+                    number: parseInt(taskNum),
+                    title: `[Phase ${phase}][Task ${taskNum}] ${title}`,
+                    body: '',
+                    labels: []
+                  };
+                  taskContent = [];
+                  inTask = true;
+                  continue;
+                }
+                
+                // End of task section (next ## or ---)
+                if (inTask && (line.startsWith('## ') || line === '---')) {
+                  if (line === '---' && currentTask) {
+                    // Include the separator in the body
+                    taskContent.push(line);
+                  }
+                  if (line.startsWith('## ') && !line.includes('[Task')) {
+                    // This is a different section, save current task
+                    if (currentTask) {
+                      currentTask.body = taskContent.join('\n').trim();
+                      tasks.push(currentTask);
+                      currentTask = null;
+                      inTask = false;
+                    }
+                  }
+                  continue;
+                }
+                
+                if (inTask && currentTask) {
+                  taskContent.push(line);
+                  
+                  // Extract labels from "Labels: x, y, z" line
+                  const labelMatch = line.match(/^Labels:\s*(.+)$/);
+                  if (labelMatch) {
+                    currentTask.labels = labelMatch[1].split(',').map(l => l.trim());
+                  }
+                }
+              }
+              
+              // Save last task
+              if (currentTask) {
+                currentTask.body = taskContent.join('\n').trim();
+                tasks.push(currentTask);
+              }
+              
+              return tasks;
+            }
+            
+            // Process each phase
+            const results = [];
+            for (const phase of phases) {
+              const ticketFile = path.join(process.env.GITHUB_WORKSPACE, 'specs/001-selective-electron', `PHASE_2_${phase}_TICKETS.md`);
+              
+              if (!fs.existsSync(ticketFile)) {
+                core.warning(`Ticket file not found: ${ticketFile}`);
+                continue;
+              }
+              
+              const content = fs.readFileSync(ticketFile, 'utf8');
+              const tasks = parseTicketFile(content, phase);
+              
+              core.info(`Found ${tasks.length} tasks in Phase ${phase}`);
+              
+              for (const task of tasks) {
+                const issueTitle = task.title;
+                const issueBody = task.body + '\n\n---\n\n- [ ] Agent MUST read and follow .github/copilot-instructions.md before starting.\n- [ ] Follow Tauri-first architecture and repo conventions.\n- [ ] TypeScript: avoid any; use unknown + guards.\n- [ ] Do not use sleep in terminal commands.';
+                const labels = task.labels.length > 0 ? [...task.labels, 'yolo'] : [`phase-${phase}`, 'yolo'];
+                
+                if (dryRun) {
+                  core.info(`[DRY RUN] Would create issue: ${issueTitle}`);
+                  core.info(`  Labels: ${labels.join(', ')}`);
+                  results.push({ phase, task: task.number, title: issueTitle, action: 'would_create' });
+                } else {
+                  try {
+                    // Check if issue already exists
+                    const q = `repo:${owner}/${repo} is:issue "${issueTitle}" in:title`;
+                    const { data: existing } = await github.rest.search.issuesAndPullRequests({ q });
+                    
+                    if (existing.total_count > 0) {
+                      core.info(`Issue already exists: ${issueTitle} (#${existing.items[0].number})`);
+                      results.push({ phase, task: task.number, title: issueTitle, action: 'already_exists', number: existing.items[0].number });
+                    } else {
+                      // Create the issue
+                      const { data: issue } = await github.rest.issues.create({
+                        owner,
+                        repo,
+                        title: issueTitle,
+                        body: issueBody,
+                        labels: labels
+                      });
+                      
+                      core.info(`Created issue #${issue.number}: ${issueTitle}`);
+                      results.push({ phase, task: task.number, title: issueTitle, action: 'created', number: issue.number });
+                    }
+                  } catch (error) {
+                    core.error(`Failed to create issue "${issueTitle}": ${error.message}`);
+                    results.push({ phase, task: task.number, title: issueTitle, action: 'error', error: error.message });
+                  }
+                }
+              }
+            }
+            
+            // Create summary
+            core.summary.addHeading('YOLO Open Issues Summary');
+            core.summary.addRaw(`Dry run: ${dryRun}\n\n`);
+            
+            const table = [['Phase', 'Task', 'Title', 'Action', 'Issue #']];
+            for (const result of results) {
+              table.push([
+                result.phase,
+                result.task.toString(),
+                result.title.substring(0, 60) + (result.title.length > 60 ? '...' : ''),
+                result.action,
+                result.number ? `#${result.number}` : '-'
+              ]);
+            }
+            core.summary.addTable(table);
+            await core.summary.write();

@@ -9,7 +9,7 @@ mod menu_plugin;
 mod tray;
 
 // Re-export command functions for testing
-pub use cmd::{open_electron_feature, is_electron_available, ensure_electron_sidecar};
+pub use cmd::{ensure_electron_sidecar, is_electron_available, open_electron_feature};
 
 use serde::Serialize;
 use tauri::{
